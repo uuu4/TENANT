@@ -1,0 +1,152 @@
+version: '3.8'
+
+services:
+  # Laravel API
+  app:
+    build:
+      context: ./tenant-app
+      dockerfile: ../Dockerfile
+    container_name: tenant-api
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./tenant-app:/var/www
+    environment:
+      - APP_ENV=local
+      - APP_DEBUG=true
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=tenant_db
+      - DB_USERNAME=tenant_user
+      - DB_PASSWORD=secret
+      - MONGODB_URI=mongodb://mongo:27017/tenant_logs
+    depends_on:
+      - postgres
+      - mongo
+    networks:
+      - tenant-network
+
+  # Nginx Web Server
+  nginx:
+    image: nginx:alpine
+    container_name: tenant-nginx
+    restart: unless-stopped
+    ports:
+      - "8000:80"
+    volumes:
+      - ./tenant-app:/var/www
+      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
+    depends_on:
+      - app
+    networks:
+      - tenant-network
+
+  # Angular Frontend
+  frontend:
+    image: node:20-alpine
+    container_name: tenant-frontend
+    working_dir: /app
+    volumes:
+      - ./tenant-frontend:/app
+    ports:
+      - "4200:4200"
+    command: sh -c "npm install && npm run start -- --host 0.0.0.0"
+    networks:
+      - tenant-network
+
+  # PostgreSQL Database
+  postgres:
+    image: postgres:16-alpine
+    container_name: tenant-postgres
+    restart: unless-stopped
+    environment:
+      POSTGRES_DB: tenant_db
+      POSTGRES_USER: tenant_user
+      POSTGRES_PASSWORD: secret
+    volumes:
+      - postgres-data:/var/lib/postgresql/data
+    ports:
+      - "5432:5432"
+    networks:
+      - tenant-network
+
+  # MongoDB for Logging
+  mongo:
+    image: mongo:7
+    container_name: tenant-mongo
+    restart: unless-stopped
+    volumes:
+      - mongo-data:/data/db
+    ports:
+      - "27017:27017"
+    networks:
+      - tenant-network
+
+  # Redis for Caching & Queue
+  redis:
+    image: redis:7-alpine
+    container_name: tenant-redis
+    restart: unless-stopped
+    ports:
+      - "6379:6379"
+    networks:
+      - tenant-network
+
+  # Queue Worker
+  queue:
+    build:
+      context: ./tenant-app
+      dockerfile: ../Dockerfile
+    container_name: tenant-queue
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./tenant-app:/var/www
+    command: php artisan queue:work --queue=webhooks,wms-sync,default --tries=3
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=tenant_db
+      - DB_USERNAME=tenant_user
+      - DB_PASSWORD=secret
+      - REDIS_HOST=redis
+    depends_on:
+      - app
+      - redis
+    networks:
+      - tenant-network
+
+  # Scheduler
+  scheduler:
+    build:
+      context: ./tenant-app
+      dockerfile: ../Dockerfile
+    container_name: tenant-scheduler
+    restart: unless-stopped
+    working_dir: /var/www
+    volumes:
+      - ./tenant-app:/var/www
+    command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
+    environment:
+      - APP_ENV=local
+      - DB_CONNECTION=pgsql
+      - DB_HOST=postgres
+      - DB_PORT=5432
+      - DB_DATABASE=tenant_db
+      - DB_USERNAME=tenant_user
+      - DB_PASSWORD=secret
+    depends_on:
+      - app
+    networks:
+      - tenant-network
+
+networks:
+  tenant-network:
+    driver: bridge
+
+volumes:
+  postgres-data:
+  mongo-data:
