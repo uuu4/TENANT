@@ -20,7 +20,7 @@ final readonly class LicenseResponse
         return $this->valid && ($this->expiresAt === null || $this->expiresAt->isFuture());
     }
 
-    public static function valid(Carbon $expiresAt, ?array $features = null): self
+    public static function valid(?Carbon $expiresAt, ?array $features = null): self
     {
         return new self(
             valid: true,

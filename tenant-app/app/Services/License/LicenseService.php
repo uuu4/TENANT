@@ -18,7 +18,7 @@ final class LicenseService
     {
         $this->providerUrl = config('license.provider_url');
         $this->validationEndpoint = config('license.validation_endpoint');
-        $this->timeout = config('license.timeout', 10);
+        $this->timeout = (int) config('license.timeout', 10);
     }
 
     public function validate(string $licenseKey, string $domain): LicenseResponse
@@ -28,11 +28,12 @@ final class LicenseService
                 ->withHeaders([
                     'Content-Type' => 'application/json',
                     'Accept' => 'application/json',
+                    'X-License-Key' => $licenseKey,
                 ])
                 ->post($this->providerUrl . $this->validationEndpoint, [
-                    'license_key' => $licenseKey,
                     'domain' => $domain,
                     'app_version' => config('app.version', '1.0.0'),
+                    'php_version' => PHP_VERSION,
                 ]);
 
             if (!$response->successful()) {
@@ -50,13 +51,14 @@ final class LicenseService
                 return LicenseResponse::invalid($data['message'] ?? 'Invalid license');
             }
 
-            $expiresAt = isset($data['expires_at']) 
-                ? Carbon::parse($data['expires_at']) 
+            // Parse expires_at from license object in response
+            $expiresAt = isset($data['license']['expires_at']) 
+                ? Carbon::parse($data['license']['expires_at']) 
                 : null;
 
             return LicenseResponse::valid(
                 expiresAt: $expiresAt,
-                features: $data['features'] ?? null,
+                features: $data['license'] ?? null,
             );
 
         } catch (\Throwable $e) {

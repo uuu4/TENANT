@@ -33,7 +33,7 @@ return [
     | The specific endpoint for license validation on the provider.
     |
     */
-    'validation_endpoint' => '/api/v1/license/validate',
+    'validation_endpoint' => env('LICENSE_VALIDATION_ENDPOINT', '/license/validate'),
 
     /*
     |--------------------------------------------------------------------------

@@ -25,9 +25,8 @@ Route::post('/auth/login', [AuthController::class, 'login']);
 // Webhook routes (no auth, but signature validated)
 Route::post('/wms/webhook', [WmsWebhookController::class, 'handle']);
 
-// Protected routes (require authentication)
-// NOTE: LicenseMiddleware temporarily disabled for UI testing
-Route::middleware(['auth:sanctum'])->group(function () {
+// Protected routes (require authentication + license validation)
+Route::middleware(['auth:sanctum', LicenseMiddleware::class])->group(function () {
 
     // Auth
     Route::post('/auth/logout', [AuthController::class, 'logout']);
