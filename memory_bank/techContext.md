@@ -16,7 +16,19 @@ graph LR
     TenantA --> MG[(MongoDB)]
 ```
 
-## Directory Structure (Implemented)
+## Multi-Repo Architecture
+```
+~/Desktop/
+├── internetprogramlama/         # Tenant Sistemi (COMPLETE)
+│   ├── tenant-app/              # Laravel Backend (Port: 8000)
+│   └── tenant-frontend/         # Angular Frontend (Port: 4200)
+│
+└── saas-provider/               # Merkezi SaaS Yönetim (NEXT)
+    ├── backend/                 # Laravel 12 API (Port: 8001)
+    └── admin-frontend/          # Angular 19 Admin (Port: 4201)
+```
+
+## Directory Structure (Tenant App - Implemented)
 ```
 tenant-app/                    # Laravel 12 Backend
 ├── app/
@@ -39,7 +51,7 @@ tenant-app/                    # Laravel 12 Backend
 │   └── wms.php                # WMS API config, sync interval (5min)
 ├── database/migrations/       # 12 migration files
 └── routes/
-    ├── api.php                # 24 API endpoints
+    ├── api.php                # 24 API endpoints (LicenseMiddleware disabled line 28-29)
     └── console.php            # Scheduler with WMS sync job
 
 tenant-frontend/               # Angular 19 Frontend
@@ -71,11 +83,12 @@ tenant-frontend/               # Angular 19 Frontend
 ## Test Data (Created)
 | Type | Items |
 |------|-------|
-| Users | admin@test.com (password123) |
+| Users | admin@test.com, customer@test.com (password123) |
 | Brands | Bosch, Siemens |
 | Categories | Electronics, Motors |
 | Products | 4 (3 in stock, 1 out of stock) |
 | Shipment Types | Standard ($10), Express ($25) |
+| Orders | ORD-20251225-38243 (Pending Approval) |
 
 ## Dependencies
 - Laravel 12 (PHP 8.4+)
@@ -104,7 +117,7 @@ npx ng serve --port=4200
 
 ## Environment Variables
 - `LICENSE_KEY`: Tenant's unique license key
-- `LICENSE_PROVIDER_URL`: SaaS provider API URL
+- `LICENSE_PROVIDER_URL`: SaaS provider API URL (to be: http://localhost:8001/api)
 - `LICENSE_CACHE_TTL`: Cache duration (default: 3600s)
 - `LICENSE_GRACE_PERIOD_HOURS`: Grace period (default: 72h)
 - `WMS_API_URL`: WMS system endpoint
@@ -141,12 +154,21 @@ npx ng serve --port=4200
 | POST | /api/admin/updates/perform | Admin | Run update |
 | POST | /api/wms/webhook | Signature | WMS events |
 
-## Recent Bug Fixes
-- **Stock Status Display**: Added `$appends = ['is_in_stock']` and `getIsInStockAttribute()` accessor to Product model
+## Bug Fixes Applied
+1. **Stock Status Display**: Added `$appends = ['is_in_stock']` and `getIsInStockAttribute()` accessor to `Product.php`
+2. **Cart 500 Error**: Changed `$product->isInStock()` to `$product->is_in_stock` in `CartController.php` (line 55)
 
-## Known Issues
-- Cart API returns 500 error on `POST /api/cart/items` - needs debugging
-- LicenseMiddleware temporarily disabled (requires SaaS Provider)
+## GitHub Repository
+- URL: https://github.com/uuu4/potential-train
+- Branch: main
+- Last commit: "Complete Tenant App - Phase 1-4"
+
+## SaaS Provider (Next Phase)
+See `/SAAS_PROVIDER_ROADMAP.md` for detailed implementation plan:
+- 5 database tables (admins, tenants, licenses, validations, versions)
+- 19 API endpoints
+- Angular admin panel
+- Port: 8001 (backend), 4201 (frontend)
 
 ---
-*Son güncelleme: 2025-12-25*
+*Last updated: 2025-12-25 15:50*
