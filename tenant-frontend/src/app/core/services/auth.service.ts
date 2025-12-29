@@ -75,12 +75,23 @@ export class AuthService {
         this.router.navigate(['/login']);
     }
 
+    // Clear token without redirect - for invalid tokens found during startup
+    private clearTokenSilently(): void {
+        localStorage.removeItem(this.tokenKey);
+        this.userSignal.set(null);
+    }
+
     private loadUserFromStorage(): void {
         const token = this.getToken();
         if (token) {
             this.fetchProfile().subscribe({
-                error: () => this.clearSession()
+                error: () => {
+                    // Don't redirect, just clear invalid token silently
+                    // Guards will handle redirect for protected routes
+                    this.clearTokenSilently();
+                }
             });
         }
     }
 }
+

@@ -80,7 +80,7 @@ php artisan serve
 ```bash
 cd tenant-frontend
 npm install
-ng serve
+npm run start
 ```
 
 ## 📁 Project Structure

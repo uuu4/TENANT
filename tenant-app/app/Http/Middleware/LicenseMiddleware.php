@@ -16,8 +16,8 @@ final readonly class LicenseMiddleware
 {
     private const int CACHE_TTL_SECONDS = 3600; // 1 hour
     private const int GRACE_PERIOD_HOURS = 72;  // 3 days
-    private const string CACHE_KEY = 'license_status';
-    private const string LAST_VALID_KEY = 'license_last_valid';
+    private const string CACHE_KEY_PREFIX = 'license_status_';
+    private const string LAST_VALID_KEY_PREFIX = 'license_last_valid_';
 
     public function __construct(
         private LicenseService $licenseService,
@@ -44,12 +44,31 @@ final readonly class LicenseMiddleware
     }
 
     /**
+     * Get cache key that includes license key hash
+     * This ensures cache is invalidated when license key changes
+     */
+    private function getCacheKey(): string
+    {
+        $licenseKey = config('license.key');
+        return self::CACHE_KEY_PREFIX . md5($licenseKey);
+    }
+
+    /**
+     * Get last valid cache key that includes license key hash
+     */
+    private function getLastValidKey(): string
+    {
+        $licenseKey = config('license.key');
+        return self::LAST_VALID_KEY_PREFIX . md5($licenseKey);
+    }
+
+    /**
      * @return array{status: string, expires_at: ?string, grace_until: ?string}
      */
     private function getLicenseStatus(): array
     {
         return Cache::remember(
-            key: self::CACHE_KEY,
+            key: $this->getCacheKey(),
             ttl: self::CACHE_TTL_SECONDS,
             callback: fn(): array => $this->validateWithProvider()
         );
@@ -68,7 +87,7 @@ final readonly class LicenseMiddleware
 
             if ($response->isValid()) {
                 // Store last valid check for grace period
-                Cache::put(self::LAST_VALID_KEY, [
+                Cache::put($this->getLastValidKey(), [
                     'expires_at' => $response->expiresAt?->toIso8601String(),
                     'validated_at' => now()->toIso8601String(),
                 ], now()->addDays(7));
@@ -92,7 +111,7 @@ final readonly class LicenseMiddleware
             ]);
 
             // Check if we have a previously valid license in grace period
-            $cachedLicense = Cache::get(self::LAST_VALID_KEY);
+            $cachedLicense = Cache::get($this->getLastValidKey());
             
             if ($cachedLicense && $this->isWithinGracePeriod($cachedLicense)) {
                 return [

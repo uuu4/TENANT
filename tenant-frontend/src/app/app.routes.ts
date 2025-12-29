@@ -4,8 +4,15 @@ import { authGuard, adminGuard } from './core/guards';
 export const routes: Routes = [
     {
         path: '',
-        redirectTo: 'products',
-        pathMatch: 'full'
+        loadComponent: () => import('./features/home/home.component').then(m => m.HomeComponent)
+    },
+    {
+        path: 'news',
+        loadComponent: () => import('./features/news/news.component').then(m => m.NewsComponent)
+    },
+    {
+        path: 'info',
+        loadComponent: () => import('./features/info/info.component').then(m => m.InfoComponent)
     },
     {
         path: 'login',
@@ -56,6 +63,7 @@ export const routes: Routes = [
     },
     {
         path: '**',
-        redirectTo: 'products'
+        redirectTo: ''
     }
 ];
+

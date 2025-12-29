@@ -1,6 +1,6 @@
 import { Component, inject, OnInit, signal } from '@angular/core';
 import { CommonModule } from '@angular/common';
-import { ProductService, CartService } from '../../../core/services';
+import { ProductService, CartService, AuthService } from '../../../core/services';
 import { Product, ProductFilter, Brand, Category } from '../../../core/models';
 import { ProductFilterComponent } from '../product-filter/product-filter.component';
 
@@ -66,15 +66,17 @@ import { ProductFilterComponent } from '../product-filter/product-filter.compone
                     </div>
                   </div>
 
-                  <button 
-                    (click)="addToCart(product)"
-                    [disabled]="!product.is_in_stock || addingToCart() === product.id"
-                    class="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
-                    @if (addingToCart() === product.id) {
-                      <span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
-                    }
-                    Add to Cart
-                  </button>
+                  @if (!isAdmin()) {
+                    <button 
+                      (click)="addToCart(product)"
+                      [disabled]="!product.is_in_stock || addingToCart() === product.id"
+                      class="w-full btn-primary disabled:opacity-50 disabled:cursor-not-allowed">
+                      @if (addingToCart() === product.id) {
+                        <span class="animate-spin inline-block w-4 h-4 border-2 border-white border-t-transparent rounded-full mr-2"></span>
+                      }
+                      Sepete Ekle
+                    </button>
+                  }
                 </div>
               </div>
             } @empty {
@@ -112,6 +114,9 @@ import { ProductFilterComponent } from '../product-filter/product-filter.compone
 export class ProductListComponent implements OnInit {
   private productService = inject(ProductService);
   private cartService = inject(CartService);
+  private authService = inject(AuthService);
+
+  isAdmin = this.authService.isAdmin;
 
   products = signal<Product[]>([]);
   brands = this.productService.brands;

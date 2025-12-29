@@ -36,14 +36,26 @@ import { AuthService, CartService, ExchangeRateService } from '../../../core/ser
 
           <!-- Navigation -->
           <nav class="hidden md:flex items-center gap-6">
-            <a routerLink="/products" 
+            <a routerLink="/" 
                class="text-gray-600 hover:text-primary-600 font-medium transition-colors">
-              Products
+              Ana Sayfa
+            </a>
+            <a routerLink="/news" 
+               class="text-gray-600 hover:text-primary-600 font-medium transition-colors">
+              Haberler
+            </a>
+            <a routerLink="/info" 
+               class="text-gray-600 hover:text-primary-600 font-medium transition-colors">
+              Hakkımızda
             </a>
             @if (isAuthenticated()) {
+              <a routerLink="/products" 
+                 class="text-gray-600 hover:text-primary-600 font-medium transition-colors">
+                Ürünler
+              </a>
               <a routerLink="/orders" 
                  class="text-gray-600 hover:text-primary-600 font-medium transition-colors">
-                Orders
+                Siparişler
               </a>
               @if (isAdmin()) {
                 <a routerLink="/admin" 
@@ -57,20 +69,22 @@ import { AuthService, CartService, ExchangeRateService } from '../../../core/ser
           <!-- Cart & User -->
           <div class="flex items-center gap-4">
             @if (isAuthenticated()) {
-              <!-- Cart -->
-              <a routerLink="/cart" 
-                 class="relative p-2 text-gray-600 hover:text-primary-600 transition-colors">
-                <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
-                  <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
-                        d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8v6a1 1 0 001 1h8a1 1 0 001-1v-6M9 21h6"/>
-                </svg>
-                @if (cartItemCount() > 0) {
-                  <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs 
-                               rounded-full flex items-center justify-center font-medium">
-                    {{ cartItemCount() }}
-                  </span>
-                }
-              </a>
+              <!-- Cart - Hide for Admin -->
+              @if (!isAdmin()) {
+                <a routerLink="/cart" 
+                   class="relative p-2 text-gray-600 hover:text-primary-600 transition-colors">
+                  <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" 
+                          d="M3 3h2l.4 2M7 13h10l4-8H5.4m1.6 8L5 5H3m4 8v6a1 1 0 001 1h8a1 1 0 001-1v-6M9 21h6"/>
+                  </svg>
+                  @if (cartItemCount() > 0) {
+                    <span class="absolute -top-1 -right-1 w-5 h-5 bg-red-500 text-white text-xs 
+                                 rounded-full flex items-center justify-center font-medium">
+                      {{ cartItemCount() }}
+                    </span>
+                  }
+                </a>
+              }
 
               <!-- User Menu -->
               <div class="flex items-center gap-2">
@@ -90,7 +104,7 @@ import { AuthService, CartService, ExchangeRateService } from '../../../core/ser
               </div>
             } @else {
               <a routerLink="/login" class="btn-primary">
-                Login
+                Giriş Yap
               </a>
             }
           </div>
@@ -114,3 +128,4 @@ export class HeaderComponent {
     this.authService.logout().subscribe();
   }
 }
+
