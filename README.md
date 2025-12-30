@@ -40,20 +40,18 @@ A distributed B2B SaaS platform where each tenant has their own isolated hosting
 
 ### Using Docker (Recommended)
 
+This repository is designed to run alongside the [SaaS Provider](../saas-provider).
+
+**Recommendation:**
+Use the `start_platform.sh` (or `.bat`) script located in the `saas-provider` repository to start both applications simultaneously.
+
+👉 [Read full INSTALL.md for details](INSTALL.md)
+
+### Manual Docker Start
+If running standalone:
 ```bash
-# Clone the repository
-git clone <repository-url>
-cd internetprogramlama
-
-# Start all services
-docker-compose up -d
-
-# Run migrations
-docker-compose exec app php artisan migrate
-
-# Create admin user
-docker-compose exec app php artisan tinker
->>> User::create(['name' => 'Admin', 'email' => 'admin@example.com', 'password' => bcrypt('password'), 'role' => 'admin', 'is_active' => true]);
+docker network create saas-network
+docker-compose up -d --build
 ```
 
 **Access:**
