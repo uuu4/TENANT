@@ -6,6 +6,7 @@ use App\Http\Controllers\Api\AuthController;
 use App\Http\Controllers\Api\CartController;
 use App\Http\Controllers\Api\OrderController;
 use App\Http\Controllers\Api\ProductController;
+use App\Http\Controllers\Api\ActivityLogController;
 use App\Http\Controllers\Api\Admin\OrderController as AdminOrderController;
 use App\Http\Controllers\Api\Admin\UpdateController;
 use App\Http\Controllers\Admin\SiteSettingController;
@@ -101,6 +102,17 @@ Route::middleware(['auth:sanctum', LicenseMiddleware::class])->group(function ()
         // System updates
         Route::get('/updates/check', [UpdateController::class, 'checkForUpdates']);
         Route::post('/updates/perform', [UpdateController::class, 'performUpdate']);
+
+        // Activity Logs (MongoDB)
+        Route::prefix('logs')->group(function () {
+            Route::get('/', [ActivityLogController::class, 'index']);
+            Route::get('/stats', [ActivityLogController::class, 'stats']);
+            Route::get('/recent', [ActivityLogController::class, 'recent']);
+            Route::get('/actions', [ActivityLogController::class, 'actions']);
+            Route::get('/model-types', [ActivityLogController::class, 'modelTypes']);
+            Route::get('/user/{userId}', [ActivityLogController::class, 'forUser']);
+            Route::get('/model/{modelType}/{modelId?}', [ActivityLogController::class, 'forModel']);
+            Route::get('/{id}', [ActivityLogController::class, 'show']);
+        });
     });
 });
-
