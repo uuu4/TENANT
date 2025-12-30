@@ -1,152 +1,62 @@
-version: '3.8'
-
 services:
-  # Laravel API
-  app:
-    build:
-      context: ./tenant-app
-      dockerfile: ../Dockerfile
-    container_name: tenant-api
-    restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./tenant-app:/var/www
-    environment:
-      - APP_ENV=local
-      - APP_DEBUG=true
-      - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=tenant_db
-      - DB_USERNAME=tenant_user
-      - DB_PASSWORD=secret
-      - MONGODB_URI=mongodb://mongo:27017/tenant_logs
-    depends_on:
-      - postgres
-      - mongo
-    networks:
-      - tenant-network
-
-  # Nginx Web Server
-  nginx:
-    image: nginx:alpine
-    container_name: tenant-nginx
-    restart: unless-stopped
-    ports:
-      - "8000:80"
-    volumes:
-      - ./tenant-app:/var/www
-      - ./docker/nginx/default.conf:/etc/nginx/conf.d/default.conf
-    depends_on:
-      - app
-    networks:
-      - tenant-network
-
-  # Angular Frontend
-  frontend:
-    image: node:20-alpine
-    container_name: tenant-frontend
-    working_dir: /app
-    volumes:
-      - ./tenant-frontend:/app
-    ports:
-      - "4200:4200"
-    command: sh -c "npm install && npm run start -- --host 0.0.0.0"
-    networks:
-      - tenant-network
-
-  # PostgreSQL Database
-  postgres:
-    image: postgres:16-alpine
-    container_name: tenant-postgres
-    restart: unless-stopped
+  # Database
+  tenant-db:
+    image: postgres:15-alpine
+    container_name: tenant-db
     environment:
       POSTGRES_DB: tenant_db
       POSTGRES_USER: tenant_user
-      POSTGRES_PASSWORD: secret
+      POSTGRES_PASSWORD: tenant_password
     volumes:
-      - postgres-data:/var/lib/postgresql/data
-    ports:
-      - "5432:5432"
+      - tenant_db_data:/var/lib/postgresql/data
     networks:
-      - tenant-network
-
-  # MongoDB for Logging
-  mongo:
-    image: mongo:7
-    container_name: tenant-mongo
-    restart: unless-stopped
-    volumes:
-      - mongo-data:/data/db
+      - saas-network
     ports:
-      - "27017:27017"
-    networks:
-      - tenant-network
+      - "5433:5432"
 
-  # Redis for Caching & Queue
-  redis:
-    image: redis:7-alpine
-    container_name: tenant-redis
-    restart: unless-stopped
-    ports:
-      - "6379:6379"
-    networks:
-      - tenant-network
-
-  # Queue Worker
-  queue:
+  # Backend API
+  tenant-api:
     build:
       context: ./tenant-app
-      dockerfile: ../Dockerfile
-    container_name: tenant-queue
+      dockerfile: Dockerfile
+    container_name: tenant-api
     restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./tenant-app:/var/www
-    command: php artisan queue:work --queue=webhooks,wms-sync,default --tries=3
-    environment:
-      - APP_ENV=local
-      - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=tenant_db
-      - DB_USERNAME=tenant_user
-      - DB_PASSWORD=secret
-      - REDIS_HOST=redis
     depends_on:
-      - app
-      - redis
+      - tenant-db
+    environment:
+      DB_CONNECTION: pgsql
+      DB_HOST: tenant-db
+      DB_PORT: 5432
+      DB_DATABASE: tenant_db
+      DB_USERNAME: tenant_user
+      DB_PASSWORD: tenant_password
+      APP_URL: http://localhost:8000
+      FRONTEND_URL: http://localhost:4200
+      LICENSE_PROVIDER_URL: http://provider-api:8000/api
+      LICENSE_KEY: SAAS-SZNE-53LV-HOFY-WPPJ
     networks:
-      - tenant-network
+      - saas-network
+    ports:
+      - "8000:8000"
 
-  # Scheduler
-  scheduler:
+  # Frontend Store
+  tenant-store:
     build:
-      context: ./tenant-app
-      dockerfile: ../Dockerfile
-    container_name: tenant-scheduler
+      context: ./tenant-frontend
+      dockerfile: Dockerfile
+    container_name: tenant-store
     restart: unless-stopped
-    working_dir: /var/www
-    volumes:
-      - ./tenant-app:/var/www
-    command: sh -c "while true; do php artisan schedule:run; sleep 60; done"
-    environment:
-      - APP_ENV=local
-      - DB_CONNECTION=pgsql
-      - DB_HOST=postgres
-      - DB_PORT=5432
-      - DB_DATABASE=tenant_db
-      - DB_USERNAME=tenant_user
-      - DB_PASSWORD=secret
     depends_on:
-      - app
+      - tenant-api
+    ports:
+      - "4200:80"
     networks:
-      - tenant-network
+      - saas-network
 
 networks:
-  tenant-network:
-    driver: bridge
+  saas-network:
+    external: true
+    name: saas-network
 
 volumes:
-  postgres-data:
-  mongo-data:
+  tenant_db_data:
